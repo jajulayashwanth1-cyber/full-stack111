@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FarmDirect - Smart Agriculture Marketplace Platform</title>
+
+  <!-- Leaflet CSS for OpenStreetMap -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    :root {
+      --primary: #2e7d32;
+      --primary-hover: #1b5e20;
+      --secondary: #f57c00;
+      --dark-text: #222222;
+      --gray-text: #555555;
+      --border: #dddddd;
+      --white: #ffffff;
+      --shadow: 0 4px 15px rgba(0,0,0,0.12);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(rgba(244, 246, 248, 0.495), rgba(244, 246, 248, 0.511)), 
+                  url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1920&q=80') center/cover fixed no-repeat;
+      color: var(--dark-text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 0 15px;
+    }
+
+    .screen {
+      display: none;
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(10px);
+      border-radius: var(--radius);
+      padding: 25px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255,255,255,0.6);
+      position: relative;
+    }
+
+    .screen.active { display: block; }
+
+    .screen-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 2px solid rgba(0,0,0,0.05);
+      padding-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .hero-banner {
+      text-align: center;
+      padding: 60px 20px;
+      background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), 
+                  url('https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat;
+      color: #ffffff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-banner h1 { color: #ffffff; font-size: 2.2rem; margin-bottom: 10px; }
+    .hero-banner p { color: #f0f0f0; font-size: 1.1rem; max-width: 700px; margin: 0 auto 20px; }
+
+    .auth-card {
+      max-width: 480px;
+      margin: 20px auto;
+      padding: 25px;
+      background: #ffffff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+
+    h1, h2, h3, h4 { color: var(--primary); margin-bottom: 12px; }
+    p { margin-bottom: 12px; color: var(--gray-text); }
+
+    .btn {
+      display: inline-block;
+      background-color: var(--primary);
+      color: var(--white);
+      padding: 10px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn:hover { background-color: var(--primary-hover); }
+    .btn-secondary { background-color: var(--secondary); }
+    .btn-secondary:hover { background-color: #e65100; }
+    .btn-outline {
+      background-color: #ffffff;
+      border: 1px solid var(--primary);
+      color: var(--primary);
+    }
+    .btn-outline:hover { background-color: var(--primary); color: var(--white); }
+    .btn-danger { background-color: #d32f2f; color: #fff; }
+    .btn-danger:hover { background-color: #b71c1c; }
+    .btn-success { background-color: #25d366; color: #fff; }
+    .btn-success:hover { background-color: #128c7e; }
+
+    .card-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .card-actions .btn { flex: 1; text-align: center; padding: 8px; font-size: 0.85rem; }
+
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 0.95rem;
+    }
+    .form-row { display: flex; gap: 15px; }
+    .form-row .form-group { flex: 1; }
+
+    .camera-box {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 15px;
+      text-align: center;
+      background: #fafafa;
+      margin-bottom: 15px;
+    }
+
+    .camera-video {
+      width: 100%;
+      max-width: 380px;
+      height: 230px;
+      object-fit: cover;
+      border-radius: var(--radius);
+      background: #000;
+      display: none;
+      margin: 10px auto;
+    }
+
+    .image-preview-box { margin-top: 10px; display: none; text-align: center; }
+    .image-preview-box img { max-width: 100%; max-height: 180px; border-radius: var(--radius); border: 1px solid var(--border); }
+
+    .profile-avatar-container { text-align: center; margin-bottom: 20px; }
+    .profile-avatar { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary); margin-bottom: 10px; }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+
+    .card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      background: #ffffff;
+    }
+    .card img { width: 100%; height: 160px; object-fit: cover; border-radius: 4px; margin-bottom: 10px; }
+
+    .table-container { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle; font-size: 0.9rem; }
+    th { background-color: #f8f9fa; }
+
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
+    .badge-success { background: #e8f5e9; color: #2e7d32; }
+    .badge-warning { background: #fff3e0; color: #ef6c00; }
+    .badge-info { background: #e3f2fd; color: #1565c0; }
+    .badge-danger { background: #ffebee; color: #c62828; }
+
+    .qty-btn { padding: 3px 8px; border: 1px solid var(--border); background: #fff; cursor: pointer; border-radius: 4px; }
+    .map-box { width: 100%; height: 220px; border-radius: var(--radius); border: 1px solid var(--border); margin-top: 10px; }
+
+    .payment-option-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      background: #fafafa;
+    }
+    .payment-option-label input[type="radio"] { width: auto; }
+
+    .stepper { display: flex; justify-content: space-between; margin: 25px 0; position: relative; }
+    .stepper::before { content: ''; position: absolute; top: 18px; left: 0; right: 0; height: 4px; background: #e0e0e0; z-index: 1; }
+    .stepper-progress { position: absolute; top: 18px; left: 0; width: 75%; height: 4px; background: var(--primary); z-index: 1; }
+    .step { position: relative; z-index: 2; background: #fff; padding: 0 10px; text-align: center; }
+    .step-icon { width: 36px; height: 36px; border-radius: 50%; background: #e0e0e0; color: #666; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-weight: bold; font-size: 0.9rem; }
+    .step.completed .step-icon, .step.active .step-icon { background: var(--primary); color: #fff; }
+    .step-label { font-size: 0.8rem; font-weight: 600; color: var(--gray-text); }
+
+    .billing-breakdown {
+      background: #fcfcfc;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 15px;
+      margin: 15px 0;
+    }
+    .billing-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 0.9rem; }
+    .billing-row.total-row {
+      border-top: 2px solid var(--primary);
+      margin-top: 8px;
+      padding-top: 10px;
+      font-size: 1.15rem;
+      font-weight: bold;
+      color: var(--primary);
+    }
+
+    .admin-nav {
+      display: flex;
+      gap: 10px;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .admin-nav-btn {
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      background: #fff;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+    .admin-nav-btn.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    .admin-section { display: none; }
+    .admin-section.active { display: block; }
+
+    .demo-box {
+      background: #e8f5e9;
+      border: 1px solid var(--primary);
+      border-radius: var(--radius);
+      padding: 12px;
+      margin-top: 15px;
+      font-size: 0.8rem;
+    }
+
+    .api-error-banner {
+      display: none;
+      background: #ffebee;
+      color: #c62828;
+      border: 1px solid #ef9a9a;
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      margin-bottom: 14px;
+      font-size: 0.85rem;
+    }
+
+    .spinner-inline {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.5);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <div id="global-api-error" class="api-error-banner"></div>
+
+    <!-- 1. HOME SCREEN -->
+    <div id="screen-home" class="screen active">
+      <div class="hero-banner">
+        <h1>FarmDirect Digital Agri Marketplace</h1>
+        <p>Direct farmer-to-buyer commerce platform with live APMC mandi rates and verified Admin Escrow Protection.</p>
+        <br>
+        <button class="btn btn-secondary" onclick="showScreen('screen-login')">Login to Platform →</button>
+        <button class="btn btn-outline" style="margin-left: 10px;" onclick="showScreen('screen-register')">Register Account</button>
+      </div>
+    </div>
+
+    <!-- 2. REGISTER SCREEN -->
+    <div id="screen-register" class="screen">
+      <div class="screen-header">
+        <h2>Create an Account</h2>
+        <button class="btn btn-outline" onclick="goBack()">← Back</button>
+      </div>
+      <div class="auth-card">
+        <form onsubmit="event.preventDefault(); handleRegistration();">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="reg-name" placeholder="e.g. John Doe" required>
+          </div>
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="reg-email" placeholder="john@example.com" required>
+          </div>
+          <div class="form-group">
+            <label>Contact Phone Number</label>
+            <input type="tel" id="reg-phone" placeholder="10-digit mobile number" required>
+          </div>
+          <div class="form-group">
+            <label>Account Role</label>
+            <select id="register-role-select">
+              <option value="farmer">Farmer (Requires Admin Approval)</option>
+              <option value="buyer">Buyer (Instant Access)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="reg-password" placeholder="Enter secure password" required>
+          </div>
+          <button type="submit" class="btn" id="register-submit-btn" style="width: 100%;">Create Account</button>
+        </form>
+        <p style="margin-top: 15px; font-size: 0.85rem; text-align: center;">
+          Already have an account? <a href="#" onclick="showScreen('screen-login')" style="color: var(--primary); font-weight: bold;">Login here</a>
+        </p>
+      </div>
+    </div>
+
+    <!-- 3. LOGIN SCREEN -->
+    <div id="screen-login" class="screen">
+      <div class="screen-header">
+        <h2>Platform Login</h2>
+        <button class="btn btn-outline" onclick="goBack()">← Back</button>
+      </div>
+      <div class="auth-card">
+        <form id="login-form-step1" onsubmit="event.preventDefault(); initiateLogin();">
+          <div class="form-group">
+            <label>Select Role</label>
+            <select id="login-role-select">
+              <option value="farmer">Farmer</option>
+              <option value="buyer">Buyer</option>
+              <option value="admin">Platform Administrator</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="login-email" value="john@farmer.com" required>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="login-password" value="password123" required>
+          </div>
+          <button type="submit" class="btn" id="login-submit-btn" style="width: 100%;">Send Verification Code →</button>
+        </form>
+
+        <div id="login-form-step2" style="display: none; margin-top: 15px;">
+          <div style="background: #e3f2fd; border: 1px solid #90caf9; padding: 12px; border-radius: var(--radius); margin-bottom: 15px; text-align: center;">
+            <p style="margin: 0; font-size: 0.85rem; color: #1565c0;">
+              📩 Enter the 4-digit code dispatched to: <br><strong id="otp-sent-email"></strong>
+            </p>
+            <div style="margin-top: 8px; font-size: 1.2rem; font-weight: bold; letter-spacing: 3px; color: var(--primary);" id="mock-inbox-preview"></div>
+          </div>
+          <div class="form-group">
+            <label>4-Digit Email Code</label>
+            <input type="text" id="login-otp-input" placeholder="XXXX" maxlength="6" style="text-align: center; font-size: 1.2rem; letter-spacing: 4px;" required>
+          </div>
+          <button type="button" class="btn btn-secondary" style="width: 100%;" onclick="verifyLoginOTP()">Verify & Sign In</button>
+          <button type="button" class="btn btn-outline" style="width: 100%; margin-top: 8px;" onclick="cancelOTPStep()">← Change Email</button>
+        </div>
+
+        <div class="demo-box">
+          <strong>⚡ Demo Credentials:</strong><br>
+          • <strong>Farmer:</strong> <code>john@farmer.com</code> | <code>password123</code><br>
+          • <strong>Buyer:</strong> <code>jane@buyer.com</code> | <code>password123</code><br>
+          • <strong>Admin:</strong> <code>admin@platform.com</code> | <code>admin123</code>
+        </div>
+
+        <p style="margin-top: 15px; font-size: 0.85rem; text-align: center;">
+          New user? <a href="#" onclick="showScreen('screen-register')" style="color: var(--primary); font-weight: bold;">Register here</a>
+        </p>
+      </div>
+    </div>
+
+    <!-- 4. PENDING APPROVAL SCREEN -->
+    <div id="screen-pending-approval" class="screen">
+      <div class="screen-header">
+        <h2>Farmer Verification Pending</h2>
+        <button class="btn btn-outline" onclick="showScreen('screen-home')">Home</button>
+      </div>
+      <div class="auth-card" style="text-align: center; max-width: 500px;">
+        <div style="font-size: 3.5rem; margin-bottom: 10px;">⏳</div>
+        <h3>Verification in Progress</h3>
+        <p>Your farmer profile has been submitted for administrative review. You will be able to log in once approved.</p>
+        <div style="margin: 20px 0; background: #fff3e0; padding: 12px; border-radius: var(--radius); border: 1px solid var(--secondary);">
+          <small style="color: var(--secondary); font-weight: bold;">Status: Pending Administrator Review</small>
+        </div>
+        <button class="btn btn-secondary" onclick="showScreen('screen-login')">Back to Login</button>
+      </div>
+    </div>
+
+    <!-- 5. FARMER DASHBOARD -->
+    <div id="screen-farmer-dash" class="screen">
+      <div class="screen-header">
+        <h2>Farmer Dashboard</h2>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-outline" onclick="openProfile()">👤 Profile</button>
+          <button class="btn btn-outline" onclick="logout()">Logout</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px; background: #f1f8e9; border-color: #c8e6c9;">
+        <h3 style="font-size: 1.05rem;">📊 Regional Mandi APMC Benchmark Rates</h3>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Crop / Commodity</th>
+                <th>Min Rate (₹/Qtl)</th>
+                <th>Max Rate (₹/Qtl)</th>
+                <th>Benchmark Average (₹/kg)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Fresh Tomatoes</td><td>₹1,800</td><td>₹2,600</td><td><strong>₹23.00 / kg</strong></td></tr>
+              <tr><td>Green Chillies</td><td>₹3,500</td><td>₹4,400</td><td><strong>₹41.00 / kg</strong></td></tr>
+              <tr><td>Organic Onions</td><td>₹1,600</td><td>₹2,300</td><td><strong>₹20.50 / kg</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid-3" style="margin-bottom: 20px;">
+        <div class="card" style="text-align: center;">
+          <small>Disbursed to Bank Account</small>
+          <div id="farmer-total-rev" style="font-size: 1.5rem; font-weight: bold; color: var(--primary);">₹0.00</div>
+        </div>
+        <div class="card" style="text-align: center;">
+          <small>Pending in Admin Escrow</small>
+          <div id="farmer-escrow-bal" style="font-size: 1.5rem; font-weight: bold; color: var(--secondary);">₹0.00</div>
+        </div>
+        <div class="card" style="text-align: center;">
+          <small>Active Produce Listings</small>
+          <div id="active-crops-count" style="font-size: 1.5rem; font-weight: bold; color: var(--primary);">0</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px;">
+        <h3>💰 Admin Disbursed Payouts & Earnings</h3>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Crop Ordered</th>
+                <th>Buyer Name</th>
+                <th>Farmer Net Earnings</th>
+                <th>Payout Status</th>
+                <th>Settlement</th>
+              </tr>
+            </thead>
+            <tbody id="farmer-payouts-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <button class="btn" onclick="showScreen('screen-add-crop')">+ List Produce for Sale</button>
+      <button class="btn btn-outline" onclick="showScreen('screen-my-crops')">View Listed Inventory</button>
+    </div>
+
+    <!-- 6. ADD CROP SCREEN -->
+    <div id="screen-add-crop" class="screen">
+      <div class="screen-header">
+        <h2>List Produce for Sale</h2>
+        <button class="btn btn-outline" onclick="closeCamera(); goBack();">← Back</button>
+      </div>
+      <form id="add-crop-form" onsubmit="event.preventDefault(); handleAddCrop();">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Produce Name</label>
+            <input type="text" id="crop-name" placeholder="e.g. Fresh Red Tomatoes" required>
+          </div>
+          <div class="form-group">
+            <label>Category</label>
+            <select id="crop-category">
+              <option>Vegetables</option>
+              <option>Fruits</option>
+              <option>Grains & Pulses</option>
+              <option>Spices & Condiments</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Price per kg (₹)</label>
+            <input type="number" step="0.5" id="crop-price" placeholder="25.00" required>
+          </div>
+          <div class="form-group">
+            <label>Available Quantity (kg)</label>
+            <input type="number" id="crop-qty" placeholder="500" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Quality Grade</label>
+            <select id="crop-grade">
+              <option value="Grade A">Grade A (Premium / Export Quality)</option>
+              <option value="Grade B">Grade B (Standard Market Grade)</option>
+              <option value="Organic Certified">100% Organic Certified</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Harvest Shelf-Life</label>
+            <input type="text" id="crop-shelflife" placeholder="e.g. 5-7 Days under standard storage" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Farm & Location Details</label>
+            <input type="text" id="crop-farm" placeholder="Farm name, Village, Mandal" required>
+          </div>
+          <div class="form-group">
+            <label>Direct Contact Phone</label>
+            <input type="tel" id="crop-farmer-phone" placeholder="10-digit phone number" value="8328205356" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Produce Photo (Live Camera)</label>
+          <div class="camera-box">
+            <video id="camera-feed" class="camera-video" autoplay playsinline></video>
+            <canvas id="camera-canvas" style="display: none;"></canvas>
+
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
+              <button type="button" class="btn btn-outline" id="start-cam-btn" onclick="startLiveCamera()">📷 Open Camera</button>
+              <button type="button" class="btn btn-secondary" id="snap-btn" style="display: none;" onclick="captureLiveSnapshot()">📸 Snap Photo</button>
+              <button type="button" class="btn btn-danger" id="stop-cam-btn" style="display: none;" onclick="closeCamera()">✕ Close</button>
+            </div>
+
+            <div id="image-preview-container" class="image-preview-box">
+              <p style="font-size: 0.85rem; margin-bottom: 5px; font-weight: 600;">Captured Image Preview:</p>
+              <img id="image-preview" src="" alt="Captured Produce">
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn" id="add-crop-submit-btn" style="width: 100%;">Publish Produce to Marketplace</button>
+      </form>
+    </div>
+
+    <!-- 7. MY CROPS SCREEN -->
+    <div id="screen-my-crops" class="screen">
+      <div class="screen-header">
+        <h2>My Listed Crops</h2>
+        <button class="btn btn-outline" onclick="goBack()">← Back</button>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Produce</th>
+              <th>Category</th>
+              <th>Grade</th>
+              <th>Price</th>
+              <th>Quantity</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="farmer-inventory-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 8. BUYER DASHBOARD -->
+    <div id="screen-buyer-dash" class="screen">
+      <div class="screen-header">
+        <h2>Buyer Portal</h2>
+        <div>
+          <button class="btn btn-outline" onclick="openProfile()">👤 Profile</button>
+          <button class="btn btn-outline" onclick="logout()">Logout</button>
+        </div>
+      </div>
+      <div class="grid-3" style="margin-bottom: 20px;">
+        <div class="card">
+          <h3>My Orders</h3>
+          <p id="buyer-orders-status" style="font-size: 1.4rem; color: var(--primary); font-weight: bold;">0 Orders</p>
+          <button class="btn btn-outline" onclick="showScreen('screen-orders')">Track Orders</button>
+        </div>
+        <div class="card">
+          <h3>Shopping Cart</h3>
+          <p style="font-size: 1.4rem; color: var(--secondary); font-weight: bold;"><span class="cart-count">0</span> Items</p>
+          <button class="btn btn-secondary" onclick="showScreen('screen-cart')">Open Cart</button>
+        </div>
+        <div class="card">
+          <h3>Produce Marketplace</h3>
+          <p style="font-size: 1.4rem; color: var(--primary); font-weight: bold;">Fresh Farm Stock</p>
+          <button class="btn btn-outline" onclick="showScreen('screen-products')">Browse Produce</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 9. USER PROFILE SCREEN -->
+    <div id="screen-profile" class="screen">
+      <div class="screen-header">
+        <h2>User Profile</h2>
+        <button class="btn btn-outline" onclick="goBack()">← Back</button>
+      </div>
+      <div class="auth-card" style="max-width: 500px;">
+        <div class="profile-avatar-container">
+          <img id="user-profile-img" class="profile-avatar" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80" alt="Avatar">
+          <div>
+            <label class="btn btn-outline" style="font-size: 0.85rem; padding: 6px 12px; cursor: pointer;">
+              📷 Update Picture
+              <input type="file" id="profile-img-input" accept="image/*" style="display: none;" onchange="handleProfilePicUpload(event)">
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="prof-name">
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="prof-email" disabled style="background:#f0f0f0;">
+        </div>
+        <div class="form-group">
+          <label>Role</label>
+          <input type="text" id="prof-role" disabled style="background:#f0f0f0;">
+        </div>
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="tel" id="prof-phone">
+        </div>
+        <button class="btn" style="width: 100%;" onclick="saveProfile()">Save Profile Changes</button>
+      </div>
+    </div>
+
+    <!-- 10. PRODUCE MARKETPLACE -->
+    <div id="screen-products" class="screen">
+      <div class="screen-header">
+        <h2>Produce Marketplace (Direct from Farms)</h2>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-secondary" onclick="showScreen('screen-cart')">🛒 Cart (<span class="cart-count">0</span>)</button>
+          <button class="btn btn-outline" onclick="goBack()">← Back</button>
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom: 15px;">
+        <div class="form-group">
+          <input type="text" id="market-search" placeholder="🔍 Search by produce name, crop category, or farm location..." oninput="filterMarketplace()">
+        </div>
+      </div>
+      <div id="marketplace-grid" class="grid-3"></div>
+    </div>
+
+    <!-- 11. PRODUCT DETAILS SCREEN -->
+    <div id="screen-product-details" class="screen">
+      <div class="screen-header">
+        <h2>Produce Details</h2>
+        <button class="btn btn-outline" onclick="goBack()">← Back</button>
+      </div>
+      <div class="grid-2">
+        <div>
+          <img id="detail-img" src="" alt="Detail" style="width: 100%; border-radius: var(--radius);">
+          <div style="margin-top: 15px; background: #fafafa; padding: 12px; border-radius: 4px; border: 1px solid var(--border);">
+            <p><strong>Quality Certification:</strong> <span id="detail-grade" class="badge badge-success">Grade A</span></p>
+            <p><strong>Estimated Shelf-Life:</strong> <span id="detail-shelflife">-</span></p>
+          </div>
+        </div>
+        <div>
+          <h2 id="detail-title">Produce Title</h2>
+          <div id="detail-price" style="font-size: 1.6rem; color: var(--primary); font-weight: bold; margin-bottom: 10px;">₹0.00 / kg</div>
+          <p><strong>Producer / Farm:</strong> <span id="detail-farm">-</span></p>
+          <p><strong>Farmer Direct Contact:</strong> <span id="detail-farmer-phone" style="font-weight: bold; color: var(--primary);">-</span></p>
+
+          <div style="display: flex; gap: 10px; margin: 15px 0;">
+            <a id="detail-whatsapp-btn" href="#" target="_blank" class="btn btn-success" style="flex: 1; text-align: center;">💬 WhatsApp</a>
+            <a id="detail-call-btn" href="#" class="btn btn-outline" style="flex: 1; text-align: center;">📞 Call</a>
+          </div>
+
+          <button id="detail-add-btn" class="btn btn-secondary" style="width: 100%; margin-bottom: 15px;">Add to Shopping Cart</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 12. CART SCREEN -->
+    <div id="screen-cart" class="screen">
+      <div class="screen-header">
+        <h2>Your Shopping Cart</h2>
+        <button class="btn btn-outline" onclick="goBack()">← Back</button>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Produce</th>
+              <th>Price/kg</th>
+              <th>Quantity (kg)</th>
+              <th>Subtotal</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="cart-table-body"></tbody>
+        </table>
+      </div>
+
+      <div class="billing-breakdown" style="max-width: 400px; margin-left: auto;">
+        <div class="billing-row">
+          <span>Items Subtotal:</span>
+          <strong>₹<span id="cart-subtotal">0.00</span></strong>
+        </div>
+        <div class="billing-row">
+          <span>Delivery Charge:</span>
+          <span>₹<span id="cart-delivery">40.00</span></span>
+        </div>
+        <div class="billing-row">
+          <span>Central Tax (CGST @ 2.5%):</span>
+          <span>₹<span id="cart-cgst">0.00</span></span>
+        </div>
+        <div class="billing-row">
+          <span>State Tax (SGST @ 2.5%):</span>
+          <span>₹<span id="cart-sgst">0.00</span></span>
+        </div>
+        <div class="billing-row total-row">
+          <span>Total Amount:</span>
+          <span>₹<span id="cart-grand-total">0.00</span></span>
+        </div>
+      </div>
+
+      <div style="text-align: right; margin-top: 15px;">
+        <button class="btn btn-secondary" onclick="proceedToCheckout()">Proceed to Checkout</button>
+      </div>
+    </div>
+
+    <!-- 13. CHECKOUT SCREEN -->
+    <div id="screen-checkout" class="screen">
+      <div class="screen-header">
+        <h2>Order Checkout & Admin Escrow Deposit</h2>
+        <button class="btn btn-outline" onclick="goBack()">← Back</button>
+      </div>
+      <form onsubmit="event.preventDefault(); completeOrder();">
+        <div class="grid-2">
+          <div>
+            <h3>Delivery Address</h3>
+
+            <button type="button" class="btn btn-secondary" style="width: 100%; margin-bottom: 15px;" onclick="detectLiveLocation()">
+              📍 Detect My Live Location
+            </button>
+
+            <div class="form-group">
+              <label>Full Name</label>
+              <input type="text" id="chk-name" value="Jane Buyer" required>
+            </div>
+            <div class="form-group">
+              <label>Phone Number</label>
+              <input type="tel" id="chk-phone" value="8328205356" required>
+            </div>
+            <div class="form-group">
+              <label>Door No. / Street Address</label>
+              <input type="text" id="chk-street" value="D.No 4-12, Main Road" required>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>City / Village</label>
+                <input type="text" id="chk-place" value="Guntur" required>
+              </div>
+              <div class="form-group">
+                <label>District / Mandal</label>
+                <input type="text" id="chk-mandal" value="Guntur Urban" required>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>State</label>
+                <input type="text" id="chk-state" value="Andhra Pradesh" required>
+              </div>
+              <div class="form-group">
+                <label>Pincode</label>
+                <input type="text" id="chk-pincode" value="522002" maxlength="6" required>
+              </div>
+            </div>
+
+            <label style="margin-top:15px; display:block;"><strong>Pin Precise Location on Map:</strong></label>
+            <div id="checkout-map" class="map-box"></div>
+          </div>
+
+          <div>
+            <h3>Escrow Payment Protection</h3>
+
+            <div style="background:#e8f5e9; border:1px solid var(--primary); padding:12px; border-radius:4px; margin-bottom:12px; font-size:0.85rem;">
+              🏦 <strong>Admin Central Escrow:</strong> Payments are held safely in escrow until the order is delivered, after which funds are released to the farmer.
+            </div>
+
+            <label class="payment-option-label">
+              <input type="radio" name="payment-method" value="upi" checked onchange="handlePaymentChange('upi')">
+              <strong>UPI (Instant Settlement to Admin Escrow)</strong>
+            </label>
+
+            <label class="payment-option-label">
+              <input type="radio" name="payment-method" value="card" onchange="handlePaymentChange('card')">
+              <strong>Credit / Debit Card</strong>
+            </label>
+
+            <label class="payment-option-label">
+              <input type="radio" name="payment-method" value="cod" onchange="handlePaymentChange('cod')">
+              <strong>Cash on Delivery (COD Verified via Admin)</strong>
+            </label>
+
+            <div id="payment-upi-box" class="form-group" style="margin-top: 15px;">
+              <label>Enter UPI ID</label>
+              <input type="text" placeholder="username@okhdfcbank">
+            </div>
+
+            <div id="payment-card-box" style="display: none; margin-top: 15px; padding: 15px; border: 1px solid var(--border); border-radius: var(--radius); background: #fdfdfd;">
+              <div class="form-group">
+                <label>Cardholder Name</label>
+                <input type="text" id="card-holder" placeholder="Jane Buyer">
+              </div>
+              <div class="form-group">
+                <label>Card Number</label>
+                <input type="text" id="card-num" placeholder="XXXX XXXX XXXX 1234" maxlength="19" oninput="formatCardNumber(this)">
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Expiry (MM/YY)</label>
+                  <input type="text" id="card-exp" placeholder="MM/YY" maxlength="5">
+                </div>
+                <div class="form-group">
+                  <label>CVV</label>
+                  <input type="password" id="card-cvv" placeholder="123" maxlength="4">
+                </div>
+              </div>
+            </div>
+
+            <div id="payment-cod-box" style="display: none; margin-top: 15px;" class="card">
+              <p style="margin: 0;">Pay with cash upon receiving items.</p>
+            </div>
+
+            <div class="billing-breakdown">
+              <h4 style="margin-bottom: 10px;">Billing Summary</h4>
+              <div class="billing-row">
+                <span>Produce Subtotal:</span>
+                <strong>₹<span id="checkout-subtotal">0.00</span></strong>
+              </div>
+              <div class="billing-row">
+                <span>Delivery Charge:</span>
+                <span>₹<span id="checkout-delivery">40.00</span></span>
+              </div>
+              <div class="billing-row">
+                <span>Taxes (GST @ 5%):</span>
+                <span>₹<span id="checkout-gst">0.00</span></span>
+              </div>
+              <div class="billing-row total-row">
+                <span>Net Payable:</span>
+                <span>₹<span id="checkout-grand-total">0.00</span></span>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-secondary" id="checkout-submit-btn" style="width: 100%; font-size: 1.1rem;">
+              Pay to Admin Escrow & Place Order (₹<span id="checkout-button-total">0.00</span>)
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- 14. ORDERS SCREEN -->
+    <div id="screen-orders" class="screen">
+      <div class="screen-header">
+        <h2>My Purchase Orders</h2>
+        <button class="btn btn-outline" onclick="goBack()">← Back</button>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Date</th>
+              <th>Total Amount</th>
+              <th>Payment & Delivery Status</th>
+              <th>Receipt</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="orders-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 15. TRACKING SCREEN -->
+    <div id="screen-tracking" class="screen">
+      <div class="screen-header">
+        <h2>Live Order Tracking</h2>
+        <button class="btn btn-outline" onclick="goBack()">← Back</button>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <h3 style="margin-bottom: 0;" id="track-order-id">Order</h3>
+            <small>Placed on: <span id="track-order-date">-</span></small>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <span class="badge badge-warning" id="track-status-badge">In Transit</span>
+            <button class="btn btn-outline" style="padding: 6px 12px; font-size: 0.8rem;" onclick="downloadOrderReceipt(activeOrderId)">🧾 Download Tax Invoice</button>
+          </div>
+        </div>
+
+        <div class="stepper">
+          <div class="stepper-progress"></div>
+          <div class="step completed"><div class="step-icon">✓</div><div class="step-label">Paid to Admin Escrow</div></div>
+          <div class="step completed"><div class="step-icon">✓</div><div class="step-label">Harvested & Dispatched</div></div>
+          <div class="step active"><div class="step-icon">🚚</div><div class="step-label">In Transit</div></div>
+          <div class="step"><div class="step-icon">🏠</div><div class="step-label">Delivered & Settled</div></div>
+        </div>
+
+        <div style="background: #e8f5e9; border: 1px solid var(--primary); border-radius: var(--radius); padding: 15px; margin-top: 15px;">
+          <strong style="color:var(--primary); font-size:1.05rem;">🛡️ Safe Escrow Flow:</strong>
+          <p style="margin: 0; font-size: 0.85rem;">Payment remains locked in secure escrow until delivered.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 16. ADMIN CONTROL PANEL -->
+    <div id="screen-admin-dash" class="screen">
+      <div class="screen-header">
+        <h2>Administrator Command Hub</h2>
+        <button class="btn btn-outline" onclick="logout()">Logout</button>
+      </div>
+
+      <div class="grid-3" style="margin-bottom: 20px;">
+        <div class="card" style="text-align: center; border-left: 4px solid var(--secondary);">
+          <small>Pending Farmer Approvals</small>
+          <div id="admin-pending-users-badge" style="font-size: 1.5rem; font-weight: bold; color: var(--secondary);">0 Farmers</div>
+        </div>
+        <div class="card" style="text-align: center; border-left: 4px solid #1565c0;">
+          <small>Escrow Funds in Holding (From Buyers)</small>
+          <div id="admin-escrow-badge" style="font-size: 1.5rem; font-weight: bold; color: #1565c0;">₹0.00</div>
+        </div>
+        <div class="card" style="text-align: center; border-left: 4px solid var(--primary);">
+          <small>Total Settled to Farmers</small>
+          <div id="admin-settled-total" style="font-size: 1.5rem; font-weight: bold; color: var(--primary);">₹0.00</div>
+        </div>
+      </div>
+
+      <div class="admin-nav">
+        <button class="admin-nav-btn active" onclick="switchAdminTab(event, 'sec-escrow-disburse')">💰 Escrow Settlement & Disburse</button>
+        <button class="admin-nav-btn" onclick="switchAdminTab(event, 'sec-account-approvals')">🔑 Farmer Verification</button>
+        <button class="admin-nav-btn" onclick="switchAdminTab(event, 'sec-produce-moderation')">🌾 Crop Moderation</button>
+        <button class="admin-nav-btn" onclick="switchAdminTab(event, 'sec-user-controls')">👥 User Management</button>
+      </div>
+
+      <!-- TAB 1 -->
+      <div id="sec-escrow-disburse" class="admin-section active">
+        <h3>🏦 Admin Escrow Inflows & Farmer Payout Clearance</h3>
+        <p style="font-size: 0.9rem;">Review buyer transactions and click <strong>"Disburse to Farmer"</strong> to execute payouts.</p>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Buyer</th>
+                <th>Farmer Name & Phone</th>
+                <th>Total Paid by Buyer</th>
+                <th>Farmer Net Share</th>
+                <th>Escrow Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="admin-escrow-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 2 -->
+      <div id="sec-account-approvals" class="admin-section">
+        <h3>Pending Farmer Verification Requests</h3>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Farmer Name</th>
+                <th>Email Address</th>
+                <th>Phone</th>
+                <th>Registration Date</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="admin-approvals-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 3 -->
+      <div id="sec-produce-moderation" class="admin-section">
+        <h3>Crop Listing Moderation</h3>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Photo</th>
+                <th>Produce Name</th>
+                <th>Category</th>
+                <th>Price (₹/kg)</th>
+                <th>Available Qty</th>
+                <th>Farm Location</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="admin-produce-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 4 -->
+      <div id="sec-user-controls" class="admin-section">
+        <h3>All Platform Users</h3>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>User Name</th>
+                <th>Email Address</th>
+                <th>Phone</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="admin-user-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Leaflet Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script src="./app.js"></script>
+</body>
+</html>
